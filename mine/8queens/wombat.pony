@@ -12,3 +12,13 @@ class Wombat
   // A private field can only be accessed by code in the same type (class?).
   // A private constructor, function, or behaviour can only be accessed by code in the same package.
   var _hunger_level: U64
+
+  // Constructors
+  // Every constructor has to set every field in an object. If it doesn't, the compiler will give you an error.
+  new create(name': String) =>
+    name = name'
+    _hunger_level = 0
+
+  new hungry(name': String, hunger': U64) =>
+    name = name'
+    _hunger_level = hunger'
