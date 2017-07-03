@@ -13,8 +13,12 @@ class Wombat
   // A private constructor, function, or behaviour can only be accessed by code in the same package.
   var _hunger_level: U64
 
+  // Sometimes it's convenient to set a field the same way for all constructors.
+  var _thirst_level: U64 = 1
+
   // Constructors
   // Every constructor has to set every field in an object. If it doesn't, the compiler will give you an error.
+  // Fields with defaults may be omitted
   new create(name': String) =>
     name = name'
     _hunger_level = 0
