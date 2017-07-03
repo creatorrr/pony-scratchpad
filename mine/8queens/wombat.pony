@@ -26,3 +26,13 @@ class Wombat
   new hungry(name': String, hunger': U64) =>
     name = name'
     _hunger_level = hunger'
+
+  // Functions in Pony are like methods in Java.
+  // They can have parameters like constructors do, and they can also have a result type (if no result type is given, it defaults to None)
+  // The result of a function is the last expression
+  fun hunger(): U64 => _hunger_level
+
+  // ref keyword implies a reference capability.
+  // It means the receiver, i.e. the object on which the set_hunger function is being called, has to be a ref type. A ref type is a reference type, meaning that the object is mutable.
+  // The default receiver reference capability if none is specified is box, which means "I need to be able to read from this, but I won't write to it".
+  fun ref set_hunger(to: U64 = 0): U64 => _hunger_level = to
