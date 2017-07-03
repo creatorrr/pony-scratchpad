@@ -38,3 +38,8 @@ class Wombat
   fun ref set_hunger(to: U64 = 0): U64 => _hunger_level = to
     // IMPORTANT: returns OLD vALUE of _hunger_level!!!
     // read: https://tutorial.ponylang.org/types/classes.html
+
+  // Finalisers are special functions.
+  // The definition of a finaliser must be fun _final().
+  // They are used for clean up code.
+  fun _final() => None
