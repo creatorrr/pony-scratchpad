@@ -36,3 +36,5 @@ class Wombat
   // It means the receiver, i.e. the object on which the set_hunger function is being called, has to be a ref type. A ref type is a reference type, meaning that the object is mutable.
   // The default receiver reference capability if none is specified is box, which means "I need to be able to read from this, but I won't write to it".
   fun ref set_hunger(to: U64 = 0): U64 => _hunger_level = to
+    // IMPORTANT: returns OLD vALUE of _hunger_level!!!
+    // read: https://tutorial.ponylang.org/types/classes.html
