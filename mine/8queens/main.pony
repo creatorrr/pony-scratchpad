@@ -11,3 +11,14 @@ actor Main
     // Pony has no global variables, so these things are explicitly passed to your program.
 
     env.out.print("nope, this is still not an 8queens solution")
+
+
+// The Pony type system offers a lot of guarantees, even more than other statically typed languages.
+
+  // - If your program compiles, it won't crash.
+  // - There will never be an unhandled exception.
+  // - There's no such thing as null, so your program will never try to dereference null.
+  // - There will never be a data race.
+  // - Your program will never deadlock.
+  // - Your code will always be capabilities-secure.
+  // - All message passing is causal.
