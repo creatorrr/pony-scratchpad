@@ -6,7 +6,7 @@ type Row is Array[Slot]
 
 actor Board
   new create(init: U32 = 0, size: U32 = 8) =>
-    embed _init = init
+    let _init = init
     let rows = Array[Row](size)
 
     // Initialize empty rows
