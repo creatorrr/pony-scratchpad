@@ -65,7 +65,8 @@ class Game
     result
 
   fun nextMoves(): Array[USize] =>
-    let moves: Array[USize] = [0; 1; 2; 3; 4; 5; 6; 7]
+    let moves: Array[USize] = Array[USize].create().>reserve(size)
+    for (i, _) in board.pairs() do moves.push(i) end
 
     try
       let current: USize = currentRow()
