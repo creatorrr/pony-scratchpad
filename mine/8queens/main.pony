@@ -34,7 +34,7 @@ class Game
     let emptyRow: Row = Row.create()
     board = Board.init(emptyRow, size)
 
-  new init(queens_at: Array[USize] val) ? =>
+  new init(queens_at: Array[USize] ref) ? =>
     let num_queens: USize = queens_at.size()
 
     if num_queens > size then
@@ -76,11 +76,13 @@ class Game
         let queen_at: USize = row.where_queen()
 
         // Remove column-blocking positions
-        let col: USize = moves.find(queen_at)
-        moves.remove(col, 1)
+        try
+          let col: USize = moves.find(queen_at)
+          moves.remove(col, 1)
+        end
 
         // Remove diag-blocking positions
-        let offset: USize = current - i
+        let offset: USize = current - size.min(i)
         let pDiag: USize = queen_at + offset
         let sDiag: USize = queen_at - offset
 
@@ -108,7 +110,15 @@ class Game
 
     playingOnRow
 
-
-
 actor Main
-  new create(env: Env) => env.out.print("Starting to get there...")
+  new create(env: Env) =>
+    try
+      let positions: Array[USize] = [1; 3]
+      let game: Game = Game.init(positions)
+
+      env.out.print("Starting to get there...")
+
+      for pos in game.nextMoves().values() do
+        env.out.print(pos.string())
+      end
+    end
