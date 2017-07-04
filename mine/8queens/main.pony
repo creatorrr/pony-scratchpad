@@ -12,9 +12,10 @@ class Row
   new create() =>
     _this = Array[Slot].init(Empty, size)
 
-  new init(queen_at: Pos = 0) ? =>
+  new init(queen_at: Pos = 0) =>
     _this = Array[Slot].init(Empty, size)
-    _this.update(queen_at, Queen)
+
+    try _this.update(queen_at, Queen) end
 
   fun is_taken(): Bool => _this.contains(Queen)
   fun where_queen(): Pos ? => _this.find(Queen)
@@ -35,12 +36,9 @@ class Game
     let emptyRow: Row = Row.create()
     board = Board.init(emptyRow, size)
 
-  new init(queens_at: Array[Pos] ref) ? =>
+  new init(queens_at': Array[Pos] val) =>
+    let queens_at = queens_at'.trim(0, size)
     let num_queens: USize = queens_at.size()
-
-    if num_queens > size then
-      error
-    end
 
     // Add rows
     board = Board.create(size)
@@ -57,6 +55,16 @@ class Game
 
     board.concat(extraRows.values())
 
+  fun blueprint(): Array[Pos] =>
+    let bp: Array[Pos] = Array[Pos].create().>reserve(size)
+    for row in board.values() do
+      try
+        bp.push(row.where_queen())
+      end
+    end
+
+    bp
+
   fun is_over(): Bool =>
     var result = true
 
@@ -64,6 +72,22 @@ class Game
       result = result and row.is_taken()
     end
     result
+
+  fun currentRow(): Pos ? =>
+    var playingOnRow: Pos = 0
+    let iter = board.values()
+
+    while iter.next().is_taken() do
+      playingOnRow = playingOnRow + 1
+    end
+
+    playingOnRow
+
+  fun ref play(pos: Pos) =>
+    try
+      let playRow: Row = board(currentRow())
+      playRow.place(pos)
+    end
 
   fun nextMoves(): Array[Pos] =>
     let moves: Array[Pos] = Array[Pos].create().>reserve(size)
@@ -102,28 +126,50 @@ class Game
 
     moves
 
-  fun currentRow(): Pos ? =>
-    var playingOnRow: Pos = 0
-    let iter = board.values()
+actor Broker
+  let _solvers: Array[Solver]
 
-    while iter.next().is_taken() do
-      playingOnRow = playingOnRow + 1
+  new create(start_poss': Array[Pos] iso) =>
+    let start_poss: Array[Pos] = consume start_poss'
+    _solvers = Array[Solver].create().>reserve(start_poss.size())
+
+    for pos in start_poss.values() do
+      let blueprint = recover iso
+        let game: Game = Game.create().>play(pos)
+        game.blueprint()
+      end
+
+      let solver: Solver = Solver.create(consume blueprint, this)
+
+      _solvers.push(solver)
     end
 
-    playingOnRow
+  // be register(solver: Solver val) =>
+  //   // Add solver and start process
+  //   _solvers.push(solver)
+  //   solver.solve()
+
+  // be start() =>
+  //   // Start solvers
+  //   for solver in _solvers.values() do solver.solve() end
 
 actor Solver
-  new create(init: Pos) => "hi"
+  let _broker: Broker
+  let _game: Game
+
+  new create(game_blueprint: Array[Pos] iso, broker: Broker) =>
+    _broker = broker
+    _game = Game.init(consume game_blueprint)
+
+  fun solve() => "hi"
 
 actor Main
   new create(env: Env) =>
-    try
-      let positions: Array[Pos] = [1; 3]
-      let game: Game = Game.init(positions)
+    let positions: Array[Pos] val = recover val [1; 3] end
+    let game: Game = Game.init(positions)
 
-      env.out.print("Starting to get there...")
+    env.out.print("Starting to get there...")
 
-      for pos in game.nextMoves().values() do
-        env.out.print(pos.string())
-      end
+    for pos in game.nextMoves().values() do
+      env.out.print(pos.string())
     end
