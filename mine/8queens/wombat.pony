@@ -43,3 +43,10 @@ class Wombat
   // The definition of a finaliser must be fun _final().
   // They are used for clean up code.
   fun _final() => None
+
+
+ // Naming stuff
+ // A Pony type, whether it's a class, actor, trait, interface, primitive, or type alias, must start with an uppercase letter
+ // any method or variable, including parameters and fields, must start with a lowercase letter
+ // underscores in a row or at the end of a name are not allowed
+ // numbers may use single underscores inside as a separator
