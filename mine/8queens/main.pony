@@ -5,9 +5,10 @@ type Slot is (Empty | Queen)
 type Row is Array[Slot]
 
 actor Board
+  embed _init = init
+  let rows = Array[Row](size)
+
   new create(init: U32 = 0, size: U32 = 8) =>
-    let _init = init
-    let rows = Array[Row](size)
 
     // Initialize empty rows
     repeat
