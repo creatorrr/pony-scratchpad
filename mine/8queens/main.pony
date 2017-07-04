@@ -144,14 +144,16 @@ actor Broker
       _solvers.push(solver)
     end
 
-  // be register(solver: Solver val) =>
-  //   // Add solver and start process
-  //   _solvers.push(solver)
-  //   solver.solve()
+   be register(solver: Solver) =>
+     // Add solver and start process
+     _solvers.push(solver)
+     solver.solve()
 
-  // be start() =>
-  //   // Start solvers
-  //   for solver in _solvers.values() do solver.solve() end
+   be start() =>
+     // Start solvers
+     for solver in _solvers.values() do
+       solver.solve()
+     end
 
 actor Solver
   let _broker: Broker
@@ -161,7 +163,7 @@ actor Solver
     _broker = broker
     _game = Game.init(consume game_blueprint)
 
-  fun solve() => "hi"
+  be solve() => "hi"
 
 actor Main
   new create(env: Env) =>
