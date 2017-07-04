@@ -18,6 +18,8 @@ class Row
     end
     result
 
+  fun where_queen(): USize ? => _this.find(Queen)
+
 actor Game
   let _init: U32
   let board: Board
