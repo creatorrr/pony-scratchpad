@@ -5,31 +5,56 @@ type Slot is (Empty | Queen)
 type Board is Array[Row]
 
 class Row
+  let size: USize = 8
   let _this: Array[Slot]
 
-  new init(from: Slot = Empty, len: USize = 8) =>
-    _this = Array[Slot].init(from, len)
+  new create() =>
+    _this = Array[Slot].init(Empty, size)
 
-  fun is_taken(): Bool =>
-    var result = false
+  new init(queen_at: USize = 0) ? =>
+    _this = Array[Slot].init(Empty, size)
+    _this.update(queen_at, Queen)
 
-    for pos in _this.values() do
-      result = result or not (pos is Empty)
-    end
-    result
-
+  fun is_taken(): Bool => _this.contains(Queen)
   fun where_queen(): USize ? => _this.find(Queen)
 
-actor Game
-  let _init: U32
+  fun ref place(pos: USize) ? =>
+    if is_taken() then
+      error
+    end
+
+    _this.update(pos, Queen)
+
+class Game
   let board: Board
+  let size: USize = 8
 
-  new create(init: U32 = 0, size: USize = 8) =>
-    _init = init
-
+  new create() =>
     // Initialize empty rows
-    let emptyRow: Row = Row.init(Empty, size)
+    let emptyRow: Row = Row.create()
     board = Board.init(emptyRow, size)
+
+  new init(queens_at: Array[USize] val) ? =>
+    let num_queens: USize = queens_at.size()
+
+    if num_queens > size then
+      error
+    end
+
+    // Add rows
+    board = Board.create(size)
+
+    for queen_at in queens_at.values() do
+      let row = Row.init(queen_at)
+      board.push(row)
+    end
+
+    // Add empty rows at end
+    let surplus: USize = size - num_queens
+    let emptyRow: Row = Row.create()
+    let extraRows: Array[Row] = Array[Row].init(emptyRow, surplus)
+
+    board.concat(extraRows.values())
 
   fun is_over(): Bool =>
     var result = true
@@ -39,7 +64,51 @@ actor Game
     end
     result
 
-  // be placeNext
+  fun nextMoves(): Array[USize] =>
+    let moves: Array[USize] = [0; 1; 2; 3; 4; 5; 6; 7]
+
+    try
+      let current: USize = currentRow()
+
+      // Prune available moves
+      for (i, row) in board.slice(0, current).pairs() do
+
+        let queen_at: USize = row.where_queen()
+
+        // Remove column-blocking positions
+        let col: USize = moves.find(queen_at)
+        moves.remove(col, 1)
+
+        // Remove diag-blocking positions
+        let offset: USize = current - i
+        let pDiag: USize = queen_at + offset
+        let sDiag: USize = queen_at - offset
+
+        try
+          let pos: USize = moves.find(pDiag)
+          moves.remove(pos, 1)
+        end
+
+        try
+          let pos: USize = moves.find(sDiag)
+          moves.remove(pos, 1)
+        end
+      end
+    end
+
+    moves
+
+  fun currentRow(): USize ? =>
+    var playingOnRow: USize = 0
+    let iter = board.values()
+
+    while iter.next().is_taken() do
+      playingOnRow = playingOnRow + 1
+    end
+
+    playingOnRow
+
+
 
 actor Main
   new create(env: Env) => env.out.print("Starting to get there...")
