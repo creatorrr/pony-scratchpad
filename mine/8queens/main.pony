@@ -1,6 +1,7 @@
 primitive Queen
 primitive Empty
 
+type Pos is USize
 type Slot is (Empty | Queen)
 type Board is Array[Row]
 
@@ -11,14 +12,14 @@ class Row
   new create() =>
     _this = Array[Slot].init(Empty, size)
 
-  new init(queen_at: USize = 0) ? =>
+  new init(queen_at: Pos = 0) ? =>
     _this = Array[Slot].init(Empty, size)
     _this.update(queen_at, Queen)
 
   fun is_taken(): Bool => _this.contains(Queen)
-  fun where_queen(): USize ? => _this.find(Queen)
+  fun where_queen(): Pos ? => _this.find(Queen)
 
-  fun ref place(pos: USize) ? =>
+  fun ref place(pos: Pos) ? =>
     if is_taken() then
       error
     end
@@ -34,7 +35,7 @@ class Game
     let emptyRow: Row = Row.create()
     board = Board.init(emptyRow, size)
 
-  new init(queens_at: Array[USize] ref) ? =>
+  new init(queens_at: Array[Pos] ref) ? =>
     let num_queens: USize = queens_at.size()
 
     if num_queens > size then
@@ -64,36 +65,36 @@ class Game
     end
     result
 
-  fun nextMoves(): Array[USize] =>
-    let moves: Array[USize] = Array[USize].create().>reserve(size)
+  fun nextMoves(): Array[Pos] =>
+    let moves: Array[Pos] = Array[Pos].create().>reserve(size)
     for (i, _) in board.pairs() do moves.push(i) end
 
     try
-      let current: USize = currentRow()
+      let current: Pos = currentRow()
 
       // Prune available moves
       for (i, row) in board.slice(0, current).pairs() do
 
-        let queen_at: USize = row.where_queen()
+        let queen_at: Pos = row.where_queen()
 
         // Remove column-blocking positions
         try
-          let col: USize = moves.find(queen_at)
+          let col: Pos = moves.find(queen_at)
           moves.remove(col, 1)
         end
 
         // Remove diag-blocking positions
-        let offset: USize = current - size.min(i)
-        let pDiag: USize = queen_at + offset
-        let sDiag: USize = queen_at - offset
+        let offset: Pos = current - size.min(i)
+        let pDiag: Pos = queen_at + offset
+        let sDiag: Pos = queen_at - offset
 
         try
-          let pos: USize = moves.find(pDiag)
+          let pos: Pos = moves.find(pDiag)
           moves.remove(pos, 1)
         end
 
         try
-          let pos: USize = moves.find(sDiag)
+          let pos: Pos = moves.find(sDiag)
           moves.remove(pos, 1)
         end
       end
@@ -101,8 +102,8 @@ class Game
 
     moves
 
-  fun currentRow(): USize ? =>
-    var playingOnRow: USize = 0
+  fun currentRow(): Pos ? =>
+    var playingOnRow: Pos = 0
     let iter = board.values()
 
     while iter.next().is_taken() do
@@ -111,10 +112,13 @@ class Game
 
     playingOnRow
 
+actor Solver
+  new create(init: Pos) => "hi"
+
 actor Main
   new create(env: Env) =>
     try
-      let positions: Array[USize] = [1; 3]
+      let positions: Array[Pos] = [1; 3]
       let game: Game = Game.init(positions)
 
       env.out.print("Starting to get there...")
