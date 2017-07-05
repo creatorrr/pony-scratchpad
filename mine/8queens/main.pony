@@ -4,7 +4,7 @@ primitive Empty
 type Pos is USize
 type Slot is (Empty | Queen)
 type Board is Array[Row]
-type Callback is {(Array[Game])}
+type Callback is {(Array[Game] iso)}
 
 class Row
   let size: USize = 8
@@ -27,6 +27,13 @@ class Row
       raw_this.push(slot)
     end
     raw_this
+
+  fun clone(): Row =>
+    try
+      Row.init(where_queen())
+    else
+      Row.create()
+    end
 
   fun ref place(pos: Pos) ? =>
     if is_taken() then
@@ -81,7 +88,7 @@ class Game
     end
     result
 
-  fun currentRow(): Pos ? =>
+  fun current_row(): Pos ? =>
     var playingOnRow: Pos = 0
     let iter = board.values()
 
@@ -93,42 +100,47 @@ class Game
 
   fun ref play(pos: Pos) =>
     try
-      let playRow: Row = board(currentRow())
+      let playRow: Row = board(current_row())
       playRow.place(pos)
     end
 
-  fun nextMoves(): Array[Pos] =>
+  fun next_moves(): Array[Pos] =>
+    var current: Pos
     let moves: Array[Pos] = Array[Pos].create().>reserve(size)
     for (i, _) in board.pairs() do moves.push(i) end
 
-    try
-      let current: Pos = currentRow()
+    current = try current_row() else 0 end
 
-      // Prune available moves
-      for (i, row) in board.slice(0, current).pairs() do
+    // Prune available moves
+    for (i, row) in board.slice(0, current).pairs() do
 
-        let queen_at: Pos = row.where_queen()
+      var queen_at: Pos = 0
 
-        // Remove column-blocking positions
-        try
-          let col: Pos = moves.find(queen_at)
-          moves.remove(col, 1)
-        end
+      try
+        queen_at = row.where_queen()
+      else
+        continue
+      end
 
-        // Remove diag-blocking positions
-        let offset: Pos = current - size.min(i)
-        let pDiag: Pos = queen_at + offset
-        let sDiag: Pos = queen_at - offset
+      // Remove column-blocking positions
+      try
+        let col: Pos = moves.find(queen_at)
+        moves.remove(col, 1)
+      end
 
-        try
-          let pos: Pos = moves.find(pDiag)
-          moves.remove(pos, 1)
-        end
+      // Remove diag-blocking positions
+      let offset: Pos = current - size.min(i)
+      let pDiag: Pos = queen_at + offset
+      let sDiag: Pos = queen_at - offset
 
-        try
-          let pos: Pos = moves.find(sDiag)
-          moves.remove(pos, 1)
-        end
+      try
+        let pos: Pos = moves.find(pDiag)
+        moves.remove(pos, 1)
+      end
+
+      try
+        let pos: Pos = moves.find(sDiag)
+        moves.remove(pos, 1)
       end
     end
 
@@ -136,14 +148,15 @@ class Game
 
 actor Broker
   let _solvers: Array[Solver]
-  let _callbacks: Array[Callback]
+  let _solutions: Array[Game]
+  let _env: Env
 
-  new create(start_poss': Array[Pos] iso) =>
+  new create(env: Env, start_poss': Array[Pos] iso) =>
     let start_poss: Array[Pos] = consume start_poss'
-    _solvers = Array[Solver].create().>reserve(start_poss.size())
 
-    // Anticipating only 1 callback for now
-    _callbacks = Array[Callback].create().>reserve(1)
+    _env = env
+    _solvers = Array[Solver].create().>reserve(start_poss.size())
+    _solutions = Array[Game].create().>reserve(96)
 
     for pos in start_poss.values() do
       let blueprint = recover iso
@@ -156,21 +169,14 @@ actor Broker
       _solvers.push(solver)
     end
 
-  // fun solutions(): Array[Game] =>
-  //   let games: Array[Game] = Array[Game].create().>reserve(96)
+  fun finished() =>
+    let result: Array[String] = [
+      "The total number of solutions is "; _solutions.size().string(); "!"
+    ]
+    _env.out.print("".join(result))
 
-  //   for solver in _solvers.values() do
-  //     games.push(solver.solution())
-  //   end
-  //
-  //   games
-
-  // fun finished() =>
-  //   for fn in _callbacks.values() do
-  //   end
-
-  fun ref on_finished(f: Callback) =>
-    _callbacks.push(f)
+  fun is_finished(): Bool =>
+    (_solvers.size() > 0) and (_solutions.size() == _solvers.size())
 
   be register(solver: Solver) =>
     // Add solver and start process
@@ -183,12 +189,9 @@ actor Broker
       solver.solve()
     end
 
-  be mark_done(solver: Solver) =>
-    try
-      _solvers.delete(
-        _solvers.find(solver)
-      )
-    end
+  be mark_done(game': Game iso) =>
+    let game: Game = consume game'
+    if game.is_over() then _solutions.push(game) end
 
 actor Solver
   let _broker: Broker
@@ -198,15 +201,18 @@ actor Solver
     _broker = broker
     _game = Game.init(consume game_blueprint)
 
-  // fun solution(): Game =>
-  //   let blueprint': Array[Pos] = _game.blueprint()
-  //   let blueprint: Array[Pos] iso = recover iso
-  //     Array[Pos].create().>append(blueprint')
-  //   end
-  //   let game: Game = Game.init(consume blueprint)
-  //   game
+  fun ref game(): Game => _game
+  fun ref done(): Bool => _game.is_over()
 
-  be solve() => "hi"
+  be solve() =>
+    if _game.is_over() then
+      let bp = _game.blueprint()
+      return
+    end
+
+    let moves: Array[Pos] = _game.next_moves()
+    moves
+
 
 actor Main
   new create(env: Env) =>
@@ -215,6 +221,6 @@ actor Main
 
     env.out.print("Starting to get there...")
 
-    for pos in game.nextMoves().values() do
+    for pos in game.next_moves().values() do
       env.out.print(pos.string())
     end
