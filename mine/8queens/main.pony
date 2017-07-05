@@ -4,6 +4,7 @@ primitive Empty
 type Pos is USize
 type Slot is (Empty | Queen)
 type Board is Array[Row]
+type Callback is {(Array[Game])}
 
 class Row
   let size: USize = 8
@@ -19,6 +20,13 @@ class Row
 
   fun is_taken(): Bool => _this.contains(Queen)
   fun where_queen(): Pos ? => _this.find(Queen)
+
+  fun raw(): Array[Slot] =>
+    let raw_this: Array[Slot] = Array[Slot].create(size)
+    for slot in _this.clone().values() do
+      raw_this.push(slot)
+    end
+    raw_this
 
   fun ref place(pos: Pos) ? =>
     if is_taken() then
@@ -128,10 +136,14 @@ class Game
 
 actor Broker
   let _solvers: Array[Solver]
+  let _callbacks: Array[Callback]
 
   new create(start_poss': Array[Pos] iso) =>
     let start_poss: Array[Pos] = consume start_poss'
     _solvers = Array[Solver].create().>reserve(start_poss.size())
+
+    // Anticipating only 1 callback for now
+    _callbacks = Array[Callback].create().>reserve(1)
 
     for pos in start_poss.values() do
       let blueprint = recover iso
@@ -144,6 +156,22 @@ actor Broker
       _solvers.push(solver)
     end
 
+  // fun solutions(): Array[Game] =>
+  //   let games: Array[Game] = Array[Game].create().>reserve(96)
+
+  //   for solver in _solvers.values() do
+  //     games.push(solver.solution())
+  //   end
+  //
+  //   games
+
+  // fun finished() =>
+  //   for fn in _callbacks.values() do
+  //   end
+
+  fun ref on_finished(f: Callback) =>
+    _callbacks.push(f)
+
   be register(solver: Solver) =>
     // Add solver and start process
     _solvers.push(solver)
@@ -155,6 +183,13 @@ actor Broker
       solver.solve()
     end
 
+  be mark_done(solver: Solver) =>
+    try
+      _solvers.delete(
+        _solvers.find(solver)
+      )
+    end
+
 actor Solver
   let _broker: Broker
   let _game: Game
@@ -162,6 +197,14 @@ actor Solver
   new create(game_blueprint: Array[Pos] iso, broker: Broker) =>
     _broker = broker
     _game = Game.init(consume game_blueprint)
+
+  // fun solution(): Game =>
+  //   let blueprint': Array[Pos] = _game.blueprint()
+  //   let blueprint: Array[Pos] iso = recover iso
+  //     Array[Pos].create().>append(blueprint')
+  //   end
+  //   let game: Game = Game.init(consume blueprint)
+  //   game
 
   be solve() => "hi"
 
