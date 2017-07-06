@@ -49,5 +49,7 @@ actor Solver
       blueprint.push(pos)
     end
 
+    if blueprint.size() > _game.size then return end
+
     let new_solver = Solver.create(consume blueprint, _broker)
     _broker.register(new_solver)
