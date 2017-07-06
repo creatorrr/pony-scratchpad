@@ -170,13 +170,13 @@ actor Broker
     end
 
   fun finished() =>
-    _env.out.print("Done!")
+    print("Done!")
 
     let result: Array[String] = [
       "The total number of solutions is "; _solutions.size().string(); "!"
     ]
 
-    _env.out.print("".join(result))
+    print("".join(result))
 
   fun is_finished(): Bool =>
     (_solvers.size() > 0) and (_solutions.size() == _solvers.size())
@@ -194,12 +194,14 @@ actor Broker
       solver.solve()
     end
 
+  be print(s: String) => _env.out.print(s)
+
   be mark_done(game': Game iso) =>
     let game: Game = consume game'
     if game.is_over() then _solutions.push(game) end
 
-    _env.out.print("Solver done")
-    _env.out.print(",".join(game.blueprint()))
+    print("Solver done")
+    print(",".join(game.blueprint()))
 
 actor Solver
   let _broker: Broker
@@ -235,17 +237,19 @@ actor Solver
 
     try
       _game.play(moves.shift())
+    else
+      _broker.print("Shit")
+    end
 
-      for move in moves.values() do
-        var blueprint: Array[Pos] iso = recover iso Array[Pos].create(8) end
-        for pos in _game.blueprint().values() do
-          blueprint.push(pos)
-        end
-
-        blueprint.push(move)
-
-        fork(consume blueprint)
+    for move in moves.values() do
+      var blueprint: Array[Pos] iso = recover iso Array[Pos].create(8) end
+      for pos in _game.blueprint().values() do
+        blueprint.push(pos)
       end
+
+      blueprint.push(move)
+
+      fork(consume blueprint)
     end
 
 actor Main
