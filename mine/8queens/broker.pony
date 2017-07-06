@@ -1,6 +1,6 @@
 actor Broker
   let _solvers: Array[Solver]
-  let _solutions: Array[Game]
+  let _solutions: Array[Array[Pos]]
   let _env: Env
 
   new create(env: Env, start_poss': Array[Pos] iso) =>
@@ -8,7 +8,7 @@ actor Broker
 
     _env = env
     _solvers = Array[Solver].create().>reserve(start_poss.size())
-    _solutions = Array[Game].create().>reserve(96)
+    _solutions = Array[Array[Pos]].create().>reserve(96)
 
     for pos in start_poss.values() do
       let blueprint: Array[Pos] iso = recover iso
@@ -21,10 +21,10 @@ actor Broker
       _solvers.push(solver)
     end
 
-  fun is_finished(): Bool =>
-    (_solvers.size() > 0) and (_solutions.size() == _solvers.size())
+  fun all_done(): Bool =>
+    _solutions.size() == _solvers.size()
 
-  fun finished() =>
+  fun finish() =>
     print("Done!")
 
     let result: Array[String] = [
@@ -40,16 +40,13 @@ actor Broker
     end
 
   be register(solver: Solver) =>
-    _env.out.print("Solver registered")
-
     // Add solver and start process
     _solvers.push(solver)
     solver.solve()
 
-  be mark_done(solver: Solver) =>
-    _solutions.push(solver.game)
+  be mark_done(solution: Array[Pos] iso) =>
+    _solutions.push(consume solution)
 
-    print("Solver done")
-    print(",".join(solver.game.blueprint()))
+    if all_done() then finish() end
 
   be print(s: String) => _env.out.print(s)

@@ -8,6 +8,7 @@ actor Solver
 
   fun ref game(): Game => _game
   fun ref done(): Bool => _game.is_over()
+  fun solution(): Array[Pos] => _game.blueprint()
 
   be solve() =>
     if done() then
@@ -35,7 +36,13 @@ actor Solver
       fork(consume blueprint)
     end
 
-  be signal_done() => _broker.mark_done(this)
+  be signal_done() =>
+    let blueprint: Array[Pos] iso = recover iso Array[Pos].create(8) end
+    for pos in _game.blueprint().values() do
+      blueprint.push(pos)
+    end
+
+    _broker.mark_done(consume blueprint)
 
   be fork(blueprint: Array[Pos] iso) =>
     if done() then return end
