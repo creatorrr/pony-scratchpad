@@ -18,6 +18,13 @@ class Row
 
     try _this.update(queen_at, Queen) end
 
+  fun ref place(pos: Pos) ? =>
+    if is_taken() then
+      error
+    end
+
+    _this.update(pos, Queen)
+
   fun is_taken(): Bool => _this.contains(Queen)
   fun where_queen(): Pos ? => _this.find(Queen)
 
@@ -35,12 +42,6 @@ class Row
       Row.create()
     end
 
-  fun ref place(pos: Pos) ? =>
-    if is_taken() then
-      error
-    end
-
-    _this.update(pos, Queen)
 
 class Game
   let board: Board
@@ -70,6 +71,12 @@ class Game
 
     board.concat(extraRows.values())
 
+  fun ref play(pos: Pos) =>
+    try
+      let playRow: Row = board(current_row())
+      playRow.place(pos)
+    end
+
   fun blueprint(): Array[Pos] =>
     let bp: Array[Pos] = Array[Pos].create().>reserve(size)
     for row in board.values() do
@@ -97,12 +104,6 @@ class Game
     end
 
     playingOnRow
-
-  fun ref play(pos: Pos) =>
-    try
-      let playRow: Row = board(current_row())
-      playRow.place(pos)
-    end
 
   fun next_moves(): Array[Pos] =>
     var current: Pos
@@ -146,62 +147,6 @@ class Game
 
     moves
 
-actor Broker
-  let _solvers: Array[Solver]
-  let _solutions: Array[Game]
-  let _env: Env
-
-  new create(env: Env, start_poss': Array[Pos] iso) =>
-    let start_poss: Array[Pos] = consume start_poss'
-
-    _env = env
-    _solvers = Array[Solver].create().>reserve(start_poss.size())
-    _solutions = Array[Game].create().>reserve(96)
-
-    for pos in start_poss.values() do
-      let blueprint = recover iso
-        let game: Game = Game.create().>play(pos)
-        game.blueprint()
-      end
-
-      let solver: Solver = Solver.create(consume blueprint, this)
-
-      _solvers.push(solver)
-    end
-
-  fun finished() =>
-    print("Done!")
-
-    let result: Array[String] = [
-      "The total number of solutions is "; _solutions.size().string(); "!"
-    ]
-
-    print("".join(result))
-
-  fun is_finished(): Bool =>
-    (_solvers.size() > 0) and (_solutions.size() == _solvers.size())
-
-  be register(solver: Solver) =>
-    _env.out.print("Solver registered")
-
-    // Add solver and start process
-    _solvers.push(solver)
-    solver.solve()
-
-  be start() =>
-    // Start solvers
-    for solver in _solvers.values() do
-      solver.solve()
-    end
-
-  be print(s: String) => _env.out.print(s)
-
-  be mark_done(game': Game iso) =>
-    let game: Game = consume game'
-    if game.is_over() then _solutions.push(game) end
-
-    print("Solver done")
-    print(",".join(game.blueprint()))
 
 actor Solver
   let _broker: Broker
@@ -213,19 +158,6 @@ actor Solver
 
   fun ref game(): Game => _game
   fun ref done(): Bool => _game.is_over()
-
-  be signal_done() =>
-    let game_copy: Game iso = recover iso Game.create() end
-
-    for pos in _game.blueprint().values() do
-      game_copy.play(pos)
-    end
-
-    _broker.mark_done(consume game_copy)
-
-  be fork(blueprint: Array[Pos] iso) =>
-    let new_solver = Solver.create(consume blueprint, _broker)
-    _broker.register(new_solver)
 
   be solve() =>
     if _game.is_over() then
@@ -251,6 +183,78 @@ actor Solver
 
       fork(consume blueprint)
     end
+
+  be signal_done() =>
+    let game_copy: Game iso = recover iso Game.create() end
+
+    for pos in _game.blueprint().values() do
+      game_copy.play(pos)
+    end
+
+    _broker.mark_done(consume game_copy)
+
+  be fork(blueprint: Array[Pos] iso) =>
+    let new_solver = Solver.create(consume blueprint, _broker)
+    _broker.register(new_solver)
+
+
+actor Broker
+  let _solvers: Array[Solver]
+  let _solutions: Array[Game]
+  let _env: Env
+
+  new create(env: Env, start_poss': Array[Pos] iso) =>
+    let start_poss: Array[Pos] = consume start_poss'
+
+    _env = env
+    _solvers = Array[Solver].create().>reserve(start_poss.size())
+    _solutions = Array[Game].create().>reserve(96)
+
+    for pos in start_poss.values() do
+      let blueprint = recover iso
+        let game: Game = Game.create().>play(pos)
+        game.blueprint()
+      end
+
+      let solver: Solver = Solver.create(consume blueprint, this)
+
+      _solvers.push(solver)
+    end
+
+  fun is_finished(): Bool =>
+    (_solvers.size() > 0) and (_solutions.size() == _solvers.size())
+
+  fun finished() =>
+    print("Done!")
+
+    let result: Array[String] = [
+      "The total number of solutions is "; _solutions.size().string(); "!"
+    ]
+
+    print("".join(result))
+
+  be start() =>
+    // Start solvers
+    for solver in _solvers.values() do
+      solver.solve()
+    end
+
+  be register(solver: Solver) =>
+    _env.out.print("Solver registered")
+
+    // Add solver and start process
+    _solvers.push(solver)
+    solver.solve()
+
+  be mark_done(game': Game iso) =>
+    let game: Game = consume game'
+    if game.is_over() then _solutions.push(game) end
+
+    print("Solver done")
+    print(",".join(game.blueprint()))
+
+  be print(s: String) => _env.out.print(s)
+
 
 actor Main
   new create(env: Env) =>
