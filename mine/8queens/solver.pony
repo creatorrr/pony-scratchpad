@@ -19,8 +19,6 @@ actor Solver
 
     try
       _game.play(moves.shift())
-    else
-      _broker.print("Shit")
     end
 
     for move in moves.values() do

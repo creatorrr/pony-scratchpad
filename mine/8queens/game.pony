@@ -35,8 +35,8 @@ class Game
   fun blueprint(): Array[Pos] =>
     let bp: Array[Pos] = Array[Pos].create().>reserve(size)
     for row in board.values() do
-      try
-        bp.push(row.where_queen())
+      if row.is_taken() then
+        try bp.push(row.where_queen()) end
       end
     end
 
@@ -50,22 +50,23 @@ class Game
     end
     result
 
-  fun current_row(): Pos ? =>
+  fun current_row(): Pos =>
     var playingOnRow: Pos = 0
-    let iter = board.values()
 
-    while iter.next().is_taken() do
-      playingOnRow = playingOnRow + 1
+    for row in board.values() do
+      if row.is_taken() then
+        playingOnRow = playingOnRow + 1
+      else break
+      end
     end
 
     playingOnRow
 
   fun next_moves(): Array[Pos] =>
-    var current: Pos
+    let current: Pos = current_row()
     let moves: Array[Pos] = Array[Pos].create().>reserve(size)
-    for (i, _) in board.pairs() do moves.push(i) end
 
-    current = try current_row() else 0 end
+    for (i, _) in board.pairs() do moves.push(i) end
 
     // Prune available moves
     for (i, row) in board.slice(0, current).pairs() do

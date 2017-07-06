@@ -11,9 +11,9 @@ actor Broker
     _solutions = Array[Game].create().>reserve(96)
 
     for pos in start_poss.values() do
-      let blueprint = recover iso
-        let game: Game = Game.create().>play(pos)
-        game.blueprint()
+      let blueprint: Array[Pos] iso = recover iso
+        let a = Array[Pos].create(1)
+        a.>push(pos)
       end
 
       let solver: Solver = Solver.create(consume blueprint, this)
