@@ -18,9 +18,7 @@ actor Solver
     let moves: Array[Pos] = _game.next_moves()
     var next_move: Pos = -1
 
-    if not moves.size() > 0 then
-      _broker.print("No moves left"); return
-    end
+    if not moves.size() > 0 then return end
 
     try
       next_move = moves.shift()
