@@ -46,11 +46,10 @@ actor Broker
     _solvers.push(solver)
     solver.solve()
 
-  be mark_done(game': Game iso) =>
-    let game: Game = consume game'
-    if game.is_over() then _solutions.push(game) end
+  be mark_done(solver: Solver) =>
+    _solutions.push(solver.game)
 
     print("Solver done")
-    print(",".join(game.blueprint()))
+    print(",".join(solver.game.blueprint()))
 
   be print(s: String) => _env.out.print(s)

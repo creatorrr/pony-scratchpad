@@ -35,14 +35,7 @@ actor Solver
       fork(consume blueprint)
     end
 
-  be signal_done() =>
-    let game_copy: Game iso = recover iso Game.create() end
-
-    for pos in _game.blueprint().values() do
-      try game_copy.play(pos) end
-    end
-
-    _broker.mark_done(consume game_copy)
+  be signal_done() => _broker.mark_done(this)
 
   be fork(blueprint: Array[Pos] iso) =>
     if done() then return end
