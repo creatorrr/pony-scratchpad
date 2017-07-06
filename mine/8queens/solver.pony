@@ -11,22 +11,23 @@ actor Solver
   fun solution(): Array[Pos] => _game.blueprint()
 
   be solve() =>
-    if done() then
-      signal_done(); return
-    end
-
     let moves: Array[Pos] = _game.next_moves()
-    var next_move: Pos = -1
-
-    if not moves.size() > 0 then return end
 
     try
-      next_move = moves.shift()
+      let next_move = moves.shift()
       _game.play(next_move)
+    else
+      signal_done(); return
     end
 
     for move in moves.values() do
       fork(move)
+    end
+
+    if done() then
+      signal_done(); return
+    else
+      solve()
     end
 
   be signal_done() =>
@@ -35,19 +36,17 @@ actor Solver
       blueprint.push(pos)
     end
 
-    _broker.mark_done(consume blueprint)
-
-  be fork(next: Pos) =>
-    if done() then
-      signal_done(); return
+    if blueprint.size() == _game.size then
+      _broker.mark_done(consume blueprint)
     end
 
+  be fork(next: Pos) =>
     let blueprint: Array[Pos] iso = recover iso Array[Pos].create() end
     for pos in solution().values() do
       blueprint.push(pos)
     end
 
-    if blueprint.size() > _game.size then return end
+    blueprint.push(next)
 
     let new_solver = Solver.create(consume blueprint, _broker)
     _broker.register(new_solver)

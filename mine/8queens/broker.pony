@@ -47,6 +47,8 @@ actor Broker
   be mark_done(solution: Array[Pos] iso) =>
     _solutions.push(consume solution)
 
+    print("/".join([_solutions.size(); _solvers.size()]))
+
     if all_done() then finish() end
 
   be print(s: String) => _env.out.print(s)
