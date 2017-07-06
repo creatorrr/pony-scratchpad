@@ -4,8 +4,13 @@ class Game
 
   new create() =>
     // Initialize empty rows
-    let emptyRow: Row = Row.create()
-    board = Board.init(emptyRow, size)
+    board = Board.create(size)
+
+    var counter = size
+    while counter > 0 do
+      board.push(Row.create())
+      counter = counter - 1
+    end
 
   new init(queens_at': Array[Pos] val) =>
     let queens_at = queens_at'.trim(0, size)
@@ -20,11 +25,11 @@ class Game
     end
 
     // Add empty rows at end
-    let surplus: USize = size - num_queens
-    let emptyRow: Row = Row.create()
-    let extraRows: Array[Row] = Array[Row].init(emptyRow, surplus)
-
-    board.concat(extraRows.values())
+    var surplus: USize = size - num_queens
+    while surplus > 0 do
+      board.push(Row.create())
+      surplus = surplus - 1
+    end
 
   fun ref play(pos: Pos) ? =>
     let playRow: Row = board(current_row())
@@ -35,11 +40,14 @@ class Game
 
     for row in board.values() do
       if row.is_taken() then
-        try bp.push(row.where_queen()) end
+        let pos = row.where_queen()
+        if pos < size then
+          bp.push(pos)
+        end
       end
     end
 
-    bp
+    bp.>trim_in_place(0, size)
 
   fun is_over(): Bool =>
     var result = true
@@ -47,6 +55,7 @@ class Game
     for row in board.values() do
       result = result and row.is_taken()
     end
+
     result
 
   fun current_row(): Pos =>
@@ -70,33 +79,19 @@ class Game
     // Prune available moves
     for (i, row) in board.slice(0, current).pairs() do
 
-      var queen_at: Pos = 0
+      let queen_at: Pos = row.where_queen()
 
-      try
-        queen_at = row.where_queen()
-      else
-        continue
-      end
-
-      // Remove column-blocking positions
-      try
-        let col: Pos = moves.find(queen_at)
-        moves.remove(col, 1)
-      end
-
-      // Remove diag-blocking positions
+      // Find blocking positions
       let offset: Pos = current - size.min(i)
-      let pDiag: Pos = queen_at + offset
-      let sDiag: Pos = queen_at - offset
 
-      try
-        let pos: Pos = moves.find(pDiag)
-        moves.remove(pos, 1)
-      end
+      let col: Pos = queen_at
+      let p_diag: Pos = queen_at + offset
+      let s_diag: Pos = queen_at - offset
 
-      try
-        let pos: Pos = moves.find(sDiag)
-        moves.remove(pos, 1)
+      let to_remove = [col; p_diag; s_diag]
+
+      for move in to_remove.values() do
+        try moves.delete(moves.find(move)) end
       end
     end
 
