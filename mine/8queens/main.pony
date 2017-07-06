@@ -170,15 +170,20 @@ actor Broker
     end
 
   fun finished() =>
+    _env.out.print("Done!")
+
     let result: Array[String] = [
       "The total number of solutions is "; _solutions.size().string(); "!"
     ]
+
     _env.out.print("".join(result))
 
   fun is_finished(): Bool =>
     (_solvers.size() > 0) and (_solutions.size() == _solvers.size())
 
   be register(solver: Solver) =>
+    _env.out.print("Solver registered")
+
     // Add solver and start process
     _solvers.push(solver)
     solver.solve()
@@ -192,6 +197,9 @@ actor Broker
   be mark_done(game': Game iso) =>
     let game: Game = consume game'
     if game.is_over() then _solutions.push(game) end
+
+    _env.out.print("Solver done")
+    _env.out.print(",".join(game.blueprint()))
 
 actor Solver
   let _broker: Broker
@@ -213,23 +221,40 @@ actor Solver
 
     _broker.mark_done(consume game_copy)
 
+  be fork(blueprint: Array[Pos] iso) =>
+    let new_solver = Solver.create(consume blueprint, _broker)
+    _broker.register(new_solver)
+
   be solve() =>
     if _game.is_over() then
       signal_done()
       return
     end
 
-    let moves: Array[Pos] = _game.next_moves()
-    moves
+    let moves: Array[Pos] = _game.next_moves().clone()
 
+    try
+      _game.play(moves.shift())
+
+      for move in moves.values() do
+        var blueprint: Array[Pos] iso = recover iso Array[Pos].create(8) end
+        for pos in _game.blueprint().values() do
+          blueprint.push(pos)
+        end
+
+        blueprint.push(move)
+
+        fork(consume blueprint)
+      end
+    end
 
 actor Main
   new create(env: Env) =>
-    let positions: Array[Pos] val = recover val [1; 3] end
-    let game: Game = Game.init(positions)
-
-    env.out.print("Starting to get there...")
-
-    for pos in game.next_moves().values() do
-      env.out.print(pos.string())
+    let positions: Array[Pos] iso = recover iso
+      [0; 1; 2; 3; 4; 5; 6; 7]
     end
+
+    let broker: Broker = Broker.create(env, consume positions)
+
+    env.out.print("Starting...")
+    broker.start()
