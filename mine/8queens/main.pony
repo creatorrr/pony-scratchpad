@@ -204,9 +204,18 @@ actor Solver
   fun ref game(): Game => _game
   fun ref done(): Bool => _game.is_over()
 
+  be signal_done() =>
+    let game_copy: Game iso = recover iso Game.create() end
+
+    for pos in _game.blueprint().values() do
+      game_copy.play(pos)
+    end
+
+    _broker.mark_done(consume game_copy)
+
   be solve() =>
     if _game.is_over() then
-      let bp = _game.blueprint()
+      signal_done()
       return
     end
 
