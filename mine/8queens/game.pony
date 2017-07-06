@@ -26,14 +26,13 @@ class Game
 
     board.concat(extraRows.values())
 
-  fun ref play(pos: Pos) =>
-    try
-      let playRow: Row = board(current_row())
-      playRow.place(pos)
-    end
+  fun ref play(pos: Pos) ? =>
+    let playRow: Row = board(current_row())
+    playRow.place(pos)
 
   fun blueprint(): Array[Pos] =>
     let bp: Array[Pos] = Array[Pos].create().>reserve(size)
+
     for row in board.values() do
       if row.is_taken() then
         try bp.push(row.where_queen()) end

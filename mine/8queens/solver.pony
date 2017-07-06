@@ -36,7 +36,7 @@ actor Solver
     let game_copy: Game iso = recover iso Game.create() end
 
     for pos in _game.blueprint().values() do
-      game_copy.play(pos)
+      try game_copy.play(pos) end
     end
 
     _broker.mark_done(consume game_copy)

@@ -11,25 +11,13 @@ class Row
     try _this.update(queen_at, Queen) end
 
   fun ref place(pos: Pos) ? =>
-    if is_taken() then
-      error
+    if is_taken() then error
+    else _this.update(pos, Queen)
     end
-
-    _this.update(pos, Queen)
 
   fun is_taken(): Bool => _this.contains(Queen)
-  fun where_queen(): Pos ? => _this.find(Queen)
 
-  fun raw(): Array[Slot] =>
-    let raw_this: Array[Slot] = Array[Slot].create(size)
-    for slot in _this.clone().values() do
-      raw_this.push(slot)
-    end
-    raw_this
+  fun where_queen(): Pos =>
+    try _this.find(Queen) else size end
 
-  fun clone(): Row =>
-    try
-      Row.init(where_queen())
-    else
-      Row.create()
-    end
+  fun clone(): Row => Row.init(where_queen())
