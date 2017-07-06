@@ -18,34 +18,36 @@ actor Solver
     let moves: Array[Pos] = _game.next_moves()
     var next_move: Pos = -1
 
+    if not moves.size() > 0 then
+      _broker.print("No moves left"); return
+    end
+
     try
       next_move = moves.shift()
       _game.play(next_move)
-    else
-      _broker.print("Failed to play next move"); return
     end
 
     for move in moves.values() do
-      let blueprint: Array[Pos] iso = recover iso Array[Pos].create(8) end
-      for pos in _game.blueprint().values() do
-        blueprint.push(pos)
-      end
-
-      blueprint.push(next_move)
-
-      fork(consume blueprint)
+      fork(move)
     end
 
   be signal_done() =>
     let blueprint: Array[Pos] iso = recover iso Array[Pos].create(8) end
-    for pos in _game.blueprint().values() do
+    for pos in solution().values() do
       blueprint.push(pos)
     end
 
     _broker.mark_done(consume blueprint)
 
-  be fork(blueprint: Array[Pos] iso) =>
-    if done() then return end
+  be fork(next: Pos) =>
+    if done() then
+      signal_done(); return
+    end
+
+    let blueprint: Array[Pos] iso = recover iso Array[Pos].create() end
+    for pos in solution().values() do
+      blueprint.push(pos)
+    end
 
     let new_solver = Solver.create(consume blueprint, _broker)
     _broker.register(new_solver)
