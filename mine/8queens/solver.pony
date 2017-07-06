@@ -10,24 +10,27 @@ actor Solver
   fun ref done(): Bool => _game.is_over()
 
   be solve() =>
-    if _game.is_over() then
-      signal_done()
-      return
+    if done() then
+      signal_done(); return
     end
 
-    let moves: Array[Pos] = _game.next_moves().clone()
+    let moves: Array[Pos] = _game.next_moves()
+    var next_move: Pos = -1
 
     try
-      _game.play(moves.shift())
+      next_move = moves.shift()
+      _game.play(next_move)
+    else
+      _broker.print("Failed to play next move"); return
     end
 
     for move in moves.values() do
-      var blueprint: Array[Pos] iso = recover iso Array[Pos].create(8) end
+      let blueprint: Array[Pos] iso = recover iso Array[Pos].create(8) end
       for pos in _game.blueprint().values() do
         blueprint.push(pos)
       end
 
-      blueprint.push(move)
+      blueprint.push(next_move)
 
       fork(consume blueprint)
     end
@@ -42,5 +45,7 @@ actor Solver
     _broker.mark_done(consume game_copy)
 
   be fork(blueprint: Array[Pos] iso) =>
+    if done() then return end
+
     let new_solver = Solver.create(consume blueprint, _broker)
     _broker.register(new_solver)
